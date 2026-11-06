@@ -1,0 +1,32 @@
+[
+  {
+    "title": "Shipping Policy",
+    "body_text": "We ship worldwide. Standard delivery takes 5-7 business days. Express delivery takes 2-3 business days. Free shipping on orders over $50.",
+    "category": "policy",
+    "status": "published",
+    "images": [
+      {
+        "url": "https://cdn.example.com/shipping-map.jpg",
+        "thumbnail_url": "https://cdn.example.com/shipping-map-thumb.jpg",
+        "alt_text": "Worldwide shipping coverage map",
+        "position": 0
+      }
+    ]
+  },
+  {
+    "title": "How to Reset Your Password",
+    "body_text": "To reset your password: go to the login page, click 'Forgot password', enter your email, and follow the reset link sent to your inbox. The link expires after 1 hour.",
+    "category": "help",
+    "status": "published",
+    "images": [],
+    "question": "How do I reset my password?",
+    "answer": "Go to the login page, click 'Forgot password', enter your email, and follow the reset link sent to your inbox. The link expires after 1 hour."
+  },
+  {
+    "title": "Return Policy",
+    "body_text": "You can return any unworn item within 30 days of delivery for a full refund. Items must be in original packaging with tags attached. Sale items are final sale.",
+    "category": "policy",
+    "status": "published",
+    "images": []
+  }
+]

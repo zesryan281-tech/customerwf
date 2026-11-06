@@ -1,0 +1,31 @@
+id: broadcast
+namespace: customer-support
+description: >
+  Manually triggered broadcast: send one message to every known customer.
+  Run it with an input, e.g.
+  POST /api/v1/main/executions/customer-support/broadcast
+  {"inputs": {"message": "We now support 24/7 checkout \U0001F389"}}
+
+inputs:
+  - id: message
+    type: STRING
+    required: true
+
+tasks:
+  - id: fetch-all
+    type: io.kestra.plugin.core.http.Request
+    uri: http://support-engine:5000/engine/customers?segment=all&limit=200
+    timeout: PT30S
+
+  - id: notify-each
+    type: io.kestra.plugin.core.flow.Loop
+    values: '{{ (fromJson(outputs["fetch-all"].body).customers ?? []) | toJson }}'
+    tasks:
+      - id: send
+        type: io.kestra.plugin.core.http.Request
+        uri: http://support-engine:5000/engine/notify
+        method: POST
+        contentType: application/json
+        timeout: PT30S
+        allowFailure: true
+        body: '{{ {"channel_user_id": fromJson(item.value).channel_user_id, "text": inputs["message"]} | toJson }}'

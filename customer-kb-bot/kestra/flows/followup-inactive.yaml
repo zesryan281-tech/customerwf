@@ -1,0 +1,47 @@
+id: followup-inactive
+namespace: customer-support
+description: >
+  Scheduled re-engagement. Finds customers inactive for N hours via the
+  RAG engine, sends each a follow-up message, then marks them touched so
+  they are not re-notified on the next run.
+
+inputs:
+  - id: hours
+    type: STRING
+    defaults: "72"
+  - id: limit
+    type: STRING
+    defaults: "50"
+
+tasks:
+  - id: fetch-inactive
+    type: io.kestra.plugin.core.http.Request
+    uri: "http://support-engine:5000/engine/customers/inactive?hours={{ inputs['hours'] }}&limit={{ inputs['limit'] }}"
+    timeout: PT30S
+
+  - id: notify-each
+    type: io.kestra.plugin.core.flow.Loop
+    values: '{{ (fromJson(outputs["fetch-inactive"].body).customers ?? []) | toJson }}'
+    tasks:
+      - id: send-followup
+        type: io.kestra.plugin.core.http.Request
+        uri: http://support-engine:5000/engine/notify
+        method: POST
+        contentType: application/json
+        timeout: PT30S
+        allowFailure: true
+        body: '{{ {"channel_user_id": fromJson(item.value).channel_user_id, "text": "Hi! It has been a while — need a hand? Just ask \U0001F916"} | toJson }}'
+
+      - id: mark-touched
+        type: io.kestra.plugin.core.http.Request
+        uri: http://support-engine:5000/engine/customers/touch
+        method: POST
+        contentType: application/json
+        timeout: PT30S
+        body: '{{ {"channel_user_id": fromJson(item.value).channel_user_id} | toJson }}'
+
+triggers:
+  - id: hourly
+    type: io.kestra.plugin.core.trigger.Schedule
+    cron: "0 * * * *"
+    timezone: Asia/Shanghai

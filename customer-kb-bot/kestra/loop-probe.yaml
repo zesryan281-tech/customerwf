@@ -1,0 +1,15 @@
+id: loop-probe
+namespace: customer-support
+description: >
+  Probe Kestra 2.0.3 Pebble syntax: toJson filter for Loop values,
+  fromJson(taskrun.value) for iteration access.
+
+tasks:
+  - id: each_item
+    type: io.kestra.plugin.core.flow.Loop
+    values: "{{ [{'cid':'c1','name':\"O'Neil\"},{'cid':'c2','name':'Zoe'}] | toJson }}"
+    tasks:
+      - id: probe_item
+        type: io.kestra.plugin.core.debug.Return
+        allowFailure: true
+        format: "cid=[{{ fromJson(item.value).cid }}] name=[{{ fromJson(item.value).name }}]"

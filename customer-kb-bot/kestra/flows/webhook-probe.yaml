@@ -1,0 +1,11 @@
+id: webhook-probe
+namespace: customer-support
+description: Probe webhook trigger.body shape (raw string vs parsed object) — data for the auto-reply flow.
+tasks:
+  - id: body-shape
+    type: io.kestra.plugin.core.debug.Return
+    format: "body=[{{ trigger.body ?? 'NULL' }}]"
+triggers:
+  - id: probe
+    type: io.kestra.plugin.core.trigger.Webhook
+    key: probe

@@ -1,0 +1,35 @@
+id: escalation-digest
+namespace: customer-support
+description: >
+  Hourly digest of unresolved customer questions. The engine records every
+  RAG answer as an event; unanswered/unresolved ones are escalated here to
+  the support operator chat (SUPPORT_CHAT_ID on the engine container).
+
+inputs:
+  - id: minutes
+    type: STRING
+    defaults: "60"
+
+tasks:
+  - id: fetch-escalations
+    type: io.kestra.plugin.core.http.Request
+    uri: "http://support-engine:5000/engine/escalations?minutes={{ inputs['minutes'] }}"
+    timeout: PT30S
+
+  - id: if-any
+    type: io.kestra.plugin.core.flow.If
+    condition: "{{ (fromJson(outputs['fetch-escalations'].body).count ?? 0) > 0 }}"
+    then:
+      - id: notify-support
+        type: io.kestra.plugin.core.http.Request
+        uri: http://support-engine:5000/engine/notify
+        method: POST
+        contentType: application/json
+        timeout: PT30S
+        body: '{{ {"to": "support", "text": ("⏰ Escalation digest: " ~ ((fromJson(outputs["fetch-escalations"].body).count ?? 0) ~ "") ~ " unresolved customer question(s) in the last hour. Please review.")} | toJson }}'
+
+triggers:
+  - id: hourly
+    type: io.kestra.plugin.core.trigger.Schedule
+    cron: "30 * * * *"
+    timezone: Asia/Shanghai

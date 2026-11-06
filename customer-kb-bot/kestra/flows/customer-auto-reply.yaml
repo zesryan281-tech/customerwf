@@ -1,0 +1,32 @@
+id: customer-auto-reply
+namespace: customer-support
+description: >
+  Option C hybrid front door. Telegram posts updates to Kestra's webhook;
+  Kestra orchestrates: Flask RAG engine (container support-engine) answers,
+  then the engine delivers the reply (+ up to 3 images) to the chat.
+
+tasks:
+  - id: only-text-messages
+    type: io.kestra.plugin.core.flow.If
+    condition: "{{ (trigger.body.message.text ?? '') != '' }}"
+    then:
+      - id: answer
+        type: io.kestra.plugin.core.http.Request
+        uri: http://support-engine:5000/engine/rag
+        method: POST
+        contentType: application/json
+        timeout: PT30S
+        body: '{{ {"question": trigger.body.message.text, "record": true, "channel_user_id": (trigger.body.message.chat.id ~ ""), "name": (trigger.body.message.from.first_name ?? "")} | toJson }}'
+
+      - id: deliver
+        type: io.kestra.plugin.core.http.Request
+        uri: http://support-engine:5000/engine/notify
+        method: POST
+        contentType: application/json
+        timeout: PT30S
+        body: "{{ {'channel_user_id': (trigger.body.message.chat.id ~ ''), 'text': fromJson(outputs['answer'].body).answer, 'images': (fromJson(outputs['answer'].body).images ?? [])} | toJson }}"
+
+triggers:
+  - id: telegram-reply
+    type: io.kestra.plugin.core.trigger.Webhook
+    key: telegram-reply
